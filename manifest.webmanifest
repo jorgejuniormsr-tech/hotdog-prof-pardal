@@ -1,0 +1,18 @@
+{
+  "name": "Hot Dog Prof. Pardal",
+  "short_name": "Prof. Pardal",
+  "description": "Cardápio e pedidos do Hot Dog Prof. Pardal",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fff7ed",
+  "theme_color": "#b91c1c",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
