@@ -283,7 +283,7 @@ async function syncCatalogFromSupabase(){
     comp.forEach(c=>(compBy[c.product_id]??=[]).push({ingredientId:c.ingredient_id,qty:Number(c.quantity),unit:c.unit,removable:c.removable!==false}));
     extras.filter(e=>e.active!==false).forEach(e=>(extraBy[e.product_id]??=[]).push({ingredientId:e.ingredient_id,price:Number(e.price),maxQty:Number(e.max_quantity)||1}));
     pdopts.forEach(x=>{if(x.active!==false)(drinkBy[x.product_id]??=[]).push(x.drink_option_id);let o=db.drinkOptions.find(o=>o.id===x.drink_option_id);if(o)o.availabilityByProduct[String(x.product_id)]=x.active!==false});
-    db.products=prods.map(p=>({id:p.id,name:p.name,cat:p.category,desc:p.description||'',price:Number(p.price),active:p.active!==false,pricePending:false,composition:compBy[p.id]||[],extraConfig:extraBy[p.id]||[],drinkOptions:drinkBy[p.id]||[],prepOptions:[]}));
+    db.products=prods.filter(p=>!p.deleted_at).map(p=>({id:p.id,name:p.name,cat:p.category,desc:p.description||'',price:Number(p.price),active:p.active!==false,pricePending:false,composition:compBy[p.id]||[],extraConfig:extraBy[p.id]||[],drinkOptions:drinkBy[p.id]||[],prepOptions:[]}));
     // Se o banco retornar os adicionais, usa exatamente o banco. Se não retornar, aplica o cadastro oficial local como contingência.
     db.products.filter(p=>p.cat==='Hot Dogs').forEach(p=>{if(!(p.extraConfig||[]).length){const premium=new Set(['Frango desfiado','Bacon','Salsicha','Linguiça calabresa']);p.extraConfig=db.ingredients.filter(i=>i.category==='Hot Dogs'||i.category==='Todos').map(i=>({ingredientId:i.id,price:premium.has(i.name)?3:1,maxQty:1}));}});
     db.orders=oldOrders;
