@@ -248,7 +248,7 @@ async function adminFetch(url,opt={}){if(!adminSession?.access_token&&!await ref
 async function adminLoginNow(){adminLoginMsg.textContent='';try{const r=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:adminEmail.value.trim(),password:adminPassword.value})}),d=await r.json();if(!r.ok)throw new Error('E-mail ou senha inválidos');saveSession(d);const t=await adminFetch(SUPABASE_URL+'/functions/v1/admin-orders',{cache:'no-store'});if(!t.ok){saveSession(null);throw new Error('Usuário sem acesso administrativo')}adminLogin.style.display='none';await loadRemoteOrders(false);startLive()}catch(e){adminLoginMsg.textContent=e.message}}
 async function initAdminAuth(){adminLoginBtn.onclick=adminLoginNow;adminPassword.onkeydown=e=>{if(e.key==='Enter')adminLoginNow()};if(await refreshSession()){const r=await adminFetch(SUPABASE_URL+'/functions/v1/admin-orders',{cache:'no-store'});if(r.ok){adminLogin.style.display='none';await loadRemoteOrders();startLive()}}}
 function startLive(){if(!orderPoll)orderPoll=setInterval(()=>loadRemoteOrders(true),3000)}
-async function loadRemoteOrders(silent=true){try{let r=await adminFetch(SUPABASE_URL+'/functions/v1/admin-orders',{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Falha');db.orders=(d.orders||[]).map(remoteOrderToLocal);save();if(!document.getElementById('adminProducts')?.classList.contains('active'))render();else renderOrderBadges?.();return true}catch(e){if(!silent)alert('Não foi possível atualizar os pedidos: '+e.message);return false}}
+async function loadRemoteOrders(silent=true){try{let r=await adminFetch(SUPABASE_URL+'/functions/v1/admin-orders',{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Falha');db.orders=(d.orders||[]).map(remoteOrderToLocal);save();if(!document.getElementById('adminProducts')?.classList.contains('active'))render();return true}catch(e){if(!silent)alert('Não foi possível atualizar os pedidos: '+e.message);return false}}
 async function updateRemoteOrder(id,field,value){let r=await adminFetch(SUPABASE_URL+'/functions/v1/admin-orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,field,value})}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Falha ao atualizar pedido');return d}
 function remoteOrderToLocal(o){return {id:o.id,date:new Date(o.created_at).toLocaleString('pt-BR'),customer:o.customer_name,phone:o.phone,type:o.order_type,address:o.address_snapshot,payment:o.payment_method,total:+o.total,status:o.status,kitchenStatus:o.kitchen_status,barStatus:o.bar_status,finishedAt:o.finalized_at?new Date(o.finalized_at).toLocaleString('pt-BR'):null,items:(o.order_items||[]).map(i=>({product:i.product_name,cat:i.category,qty:i.quantity,unitPrice:+i.unit_price,price:+i.line_total,flavor:i.flavor||'',sugar:i.sugar||'',drinkOption:i.drink_option||'',obs:i.observation||'',remove:(i.order_item_removals||[]).map(x=>x.ingredient_name),extras:(i.order_item_extras||[]).map(x=>(x.quantity>1?x.quantity+'× ':'')+x.ingredient_name)}))}}
 
@@ -260,8 +260,8 @@ async function sbGet(table,select='*'){
 }
 async function syncCatalogFromSupabase(){
   try{
-    const [ings,prods,comp,extras,dopts,pdopts,settings]=await Promise.all([
-      sbGet('ingredients'),sbGet('products'),sbGet('product_composition'),sbGet('product_extras'),sbGet('drink_options'),sbGet('product_drink_options'),sbGet('app_settings')
+    const [ings,prods,comp,extras,dopts,pdopts,settings,waTemplates]=await Promise.all([
+      sbGet('ingredients'),sbGet('products'),sbGet('product_composition'),sbGet('product_extras'),sbGet('drink_options'),sbGet('product_drink_options'),sbGet('app_settings'),sbGet('whatsapp_templates')
     ]);
     const oldOrders=db.orders||[];
     db.ingredients=ings.map(i=>({id:i.id,name:i.name,category:i.category,active:i.active!==false}));
@@ -272,7 +272,7 @@ async function syncCatalogFromSupabase(){
     pdopts.forEach(x=>{if(x.active!==false)(drinkBy[x.product_id]??=[]).push(x.drink_option_id);let o=db.drinkOptions.find(o=>o.id===x.drink_option_id);if(o)o.availabilityByProduct[String(x.product_id)]=x.active!==false});
     db.products=prods.filter(p=>!p.deleted_at).map(p=>({id:p.id,name:p.name,cat:p.category,desc:p.description||'',price:Number(p.price),active:p.active!==false,pricePending:false,composition:compBy[p.id]||[],extraConfig:extraBy[p.id]||[],drinkOptions:drinkBy[p.id]||[],prepOptions:[]}));
     db.orders=oldOrders;
-    settings.forEach(s=>{if(s.key==='delivery_open')db.deliveryOpen=!!s.value;if(s.key==='notice_text')db.noticeText=String(s.value||'');if(s.key==='notice_enabled')db.noticeEnabled=!!s.value});
+    settings.forEach(s=>{if(s.key==='delivery_open')db.deliveryOpen=!!s.value;if(s.key==='notice_text')db.noticeText=String(s.value||'');if(s.key==='notice_enabled')db.noticeEnabled=!!s.value});waTemplates.forEach(w=>{if(w.status_key)db.whatsAppMessages[w.status_key]=w.message});
     save();render();
     console.info('Cardápio sincronizado com Supabase');
   }catch(err){console.warn('Não foi possível sincronizar com Supabase; usando dados locais.',err);}
