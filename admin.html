@@ -370,19 +370,21 @@ async function saveProduct(id){
   let extraConfig=[...document.querySelectorAll('.extraCheck:checked')].map(ch=>({ingredientId:ch.dataset.id,price:+document.querySelector(`.extraPrice[data-id="${CSS.escape(ch.dataset.id)}"]`).value||0,maxQty:Math.max(1,+document.querySelector(`.extraMax[data-id="${CSS.escape(ch.dataset.id)}"]`).value||1)}));
   let old=id?db.products.find(p=>String(p.id)===String(id)):null;
   let drinkOptions=pc.value==='Bebidas'?[...document.querySelectorAll('.drinkProductCheck:checked')].map(ch=>ch.dataset.id):(old?.drinkOptions||[]);
-  if(!id)return alert('O cadastro de novos produtos ainda será migrado para o banco. Por enquanto, edite produtos existentes.');
+  
   const btn=sheet.querySelector('.btn.green');if(btn){btn.disabled=true;btn.textContent='Salvando...'}
   try{
     const base=SUPABASE_URL+'/rest/v1/';
+    let productId=id;
     const req=async(path,opt={})=>{let r=await adminFetch(base+path,opt);if(!r.ok){let t=await r.text();throw new Error(t||'Falha ao salvar ficha')}return r};
-    await req('products?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({name:pn.value.trim(),category:pc.value,description:pd.value.trim(),price:+pp.value,updated_at:new Date().toISOString()})});
-    await req('product_composition?product_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:{'Prefer':'return=minimal'}});
-    if(composition.length)await req('product_composition',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(composition.map(c=>({product_id:id,ingredient_id:c.ingredientId,quantity:c.qty,unit:c.unit,removable:c.removable})))});
-    await req('product_extras?product_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:{'Prefer':'return=minimal'}});
-    if(extraConfig.length)await req('product_extras',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(extraConfig.map(e=>({product_id:id,ingredient_id:e.ingredientId,price:e.price,max_quantity:e.maxQty,active:true})))});
+    if(productId){await req('products?id=eq.'+encodeURIComponent(productId),{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({name:pn.value.trim(),category:pc.value,description:pd.value.trim(),price:+pp.value,updated_at:new Date().toISOString()})})}
+    else{let r=await req('products',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({name:pn.value.trim(),category:pc.value,description:pd.value.trim(),price:+pp.value,active:true})});let rows=await r.json();productId=rows[0]?.id;if(!productId)throw new Error('Produto criado sem identificador')}
+    await req('product_composition?product_id=eq.'+encodeURIComponent(productId),{method:'DELETE',headers:{'Prefer':'return=minimal'}});
+    if(composition.length)await req('product_composition',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(composition.map(c=>({product_id:productId,ingredient_id:c.ingredientId,quantity:c.qty,unit:c.unit,removable:c.removable})))});
+    await req('product_extras?product_id=eq.'+encodeURIComponent(productId),{method:'DELETE',headers:{'Prefer':'return=minimal'}});
+    if(extraConfig.length)await req('product_extras',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(extraConfig.map(e=>({product_id:productId,ingredient_id:e.ingredientId,price:e.price,max_quantity:e.maxQty,active:true})))});
     if(pc.value==='Bebidas'){
-      await req('product_drink_options?product_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:{'Prefer':'return=minimal'}});
-      if(drinkOptions.length)await req('product_drink_options',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(drinkOptions.map(oid=>({product_id:id,drink_option_id:oid,active:true})))});
+      await req('product_drink_options?product_id=eq.'+encodeURIComponent(productId),{method:'DELETE',headers:{'Prefer':'return=minimal'}});
+      if(drinkOptions.length)await req('product_drink_options',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(drinkOptions.map(oid=>({product_id:productId,drink_option_id:oid,active:true})))});
     }
     window.editingProduct=null;closeModal();await syncCatalogFromSupabase();alert('Ficha do produto atualizada com sucesso.');
   }catch(e){alert('Não foi possível salvar a ficha: '+e.message)}
