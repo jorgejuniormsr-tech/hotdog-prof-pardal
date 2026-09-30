@@ -260,7 +260,7 @@ function saveCustomerPrefs(payload){
 function applyCustomerPrefs(){
   let p=loadCustomerPrefs(); if(p.name&&custName)custName.value=p.name;if(p.phone&&custPhone)custPhone.value=p.phone;
   let d=topPref(p.delivery);if(d&&delivery){delivery.value=d;delivery.dispatchEvent(new Event('change'))}
-  let pay=topPref(p.payment);if(pay&&payment)payment.value=pay;
+  let pay=topPref(p.payment);if(pay&&payment){payment.value=pay;payment.dispatchEvent(new Event('change'))}
   let ak=topPref(p.addresses);if(ak){let a=ak.split('|');[['street',0],['number',1],['neighborhood',2],['city',3],['state',4],['complement',5],['reference',6]].forEach(([id,n])=>{let el=document.getElementById(id);if(el)el.value=a[n]||''})}
 }
 let cart=[],selected=null,menuCat='Hot Dogs';
