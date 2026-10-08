@@ -9,14 +9,26 @@
   "theme_color": "#b91c1c",
   "icons": [
     {
-      "src": "/Imagem%20do%20ChatGPT%2029%20de%20set.%20de%202026%2C%2019_43_20.png",
-      "sizes": "1024x1024",
+      "src": "/icon-192-any.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/Imagem%20do%20ChatGPT%2029%20de%20set.%20de%202026%2C%2019_43_20.png",
-      "sizes": "1024x1024",
+      "src": "/icon-512-any.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
