@@ -91,6 +91,18 @@ body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-fixed{position:fixed
  body.pardal-scrolled #menu.screen.active .pardal-order-bar{margin-top:0}
 }
 
+/* Capa estática: não encolhe nem acompanha a rolagem */
+#menu.screen.active .pardal-fixed{position:relative!important;top:auto!important;left:auto!important;transform:none!important;width:auto!important;box-shadow:none!important}
+#menu.screen.active .pardal-hero{transition:none!important}
+body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-fixed{position:relative!important;top:auto!important;left:auto!important;transform:none!important;width:auto!important;background:transparent!important;box-shadow:none!important;padding:0!important}
+body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-intro{padding-top:0!important}
+body.pardal-scrolled #menu.screen.active .pardal-hero{height:clamp(210px,45vw,320px)!important}
+body.pardal-scrolled #menu.screen.active .pardal-hero-logo{width:110px!important;height:80px!important}
+body.pardal-scrolled #menu.screen.active .pardal-hero-overlay{padding:18px!important}
+body.pardal-scrolled #menu.screen.active .pardal-hero-overlay strong{font-size:inherit!important}
+body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-bar{margin-top:0;padding:9px 11px}
+@media(max-width:760px){body.pardal-scrolled #menu.screen.active .pardal-hero{height:clamp(245px,66vw,340px)!important}body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-bar{margin-top:-15px}}
+
 /* Preserva duas colunas apos adicionar o contêiner da legenda */
 @media(max-width:760px){
  #menu #menuGrid .card.pardal-product>.pardal-photo-wrap{display:block!important;grid-column:1!important;grid-row:1!important;width:100%!important;max-width:100%!important;height:100px!important;margin:0!important}
