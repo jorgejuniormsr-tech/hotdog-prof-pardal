@@ -103,6 +103,11 @@ body.pardal-scrolled #menu.screen.active .pardal-hero-overlay strong{font-size:i
 body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-bar{margin-top:0;padding:9px 11px}
 @media(max-width:760px){body.pardal-scrolled #menu.screen.active .pardal-hero{height:clamp(245px,66vw,340px)!important}body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-bar{margin-top:-15px}}
 
+/* O carrinho mantém exatamente o mesmo tamanho antes e depois de rolar */
+body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-summary b{font-size:inherit!important}
+body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-actions .btn{padding:9px!important;font-size:12px!important}
+@media(max-width:440px){body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-bar{flex-wrap:wrap!important}body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-actions{width:100%!important}body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-order-actions .btn{white-space:normal!important}}
+
 /* Preserva duas colunas apos adicionar o contêiner da legenda */
 @media(max-width:760px){
  #menu #menuGrid .card.pardal-product>.pardal-photo-wrap{display:block!important;grid-column:1!important;grid-row:1!important;width:100%!important;max-width:100%!important;height:100px!important;margin:0!important}
