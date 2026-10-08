@@ -79,6 +79,17 @@ body.pardal-scrolled:has(#menu.screen.active) #menu .pardal-fixed{position:fixed
 #menu #menuGrid .pardal-photo-wrap .pardal-product-photo.pardal-bottle-tall{object-fit:contain!important}
 #menu #menuGrid .pardal-photo-caption{position:absolute;right:3px;bottom:3px;z-index:1;font-size:9px;line-height:1.15;color:#fff;background:rgba(0,0,0,.68);padding:3px 4px;border-radius:4px;white-space:nowrap;pointer-events:none}
 @media(max-width:760px){#menu #menuGrid .pardal-photo-wrap{width:100%!important;height:100px!important;max-width:100%!important;margin:0!important;grid-column:1;grid-row:1}}
+
+/* Capa sem margens laterais no celular, com cartao de pedido sobreposto */
+@media(max-width:760px){
+ body:has(#menu.screen.active) main.wrap{padding-left:16px;padding-right:16px}
+ #menu.screen.active .pardal-hero{width:calc(100% + 32px);margin-left:-16px;margin-right:-16px;border-radius:0!important;height:clamp(310px,84vw,440px)}
+ #menu.screen.active .pardal-hero:before{background-position:center 48%}
+ #menu.screen.active .pardal-fixed{background:transparent;box-shadow:none;padding-bottom:0;border-radius:0}
+ #menu.screen.active .pardal-order-bar{position:relative;z-index:2;margin-top:-15px;border-radius:18px!important}
+ body.pardal-scrolled #menu.screen.active .pardal-hero{height:75px}
+ body.pardal-scrolled #menu.screen.active .pardal-order-bar{margin-top:0}
+}
 </style><link rel='manifest' href='/manifest.webmanifest'><meta name='theme-color' content='#b91c1c'><link rel='icon' href="/Hotdog%20Prof.%20Pardal_%20Mascote%20Chef.png"><link rel='apple-touch-icon' href='/apple-touch-icon.png'></head><body><header class='pardal-legacy-header'><div class='wrap'><div class='top'><div class='brand-lockup'><img class='brand-logo' src='/Hotdog%20Prof.%20Pardal_%20Mascote%20Chef.png' alt='Hot Dog Prof. Pardal'><div class='brand-copy'><div class='brand'>Hot Dog Prof. Pardal</div><div class='muted'>Cardápio e pedidos · v8.24</div><button id='installAppBtn' class='btn secondary' style='display:inline-flex;margin-top:6px'>📲 Instalar app</button></div></div></div><nav id='clientNav'><button class='btn' onclick="show('menu')">Cardápio</button><button class='btn secondary' onclick="show('cart')">🛒 Carrinho <span id='cartCount'>0</span> · <span id='cartMiniTotal'>R$ 0,00</span></button><button class='btn secondary' onclick="show('myorders')">Meu pedido</button></nav></div></header><main class='wrap'>
 <section id='menu' class='screen active'><div class='pardal-intro'><div class='pardal-fixed'>
 <div class='pardal-hero'><div class='pardal-hero-overlay'><img class='pardal-hero-logo' src='/Hotdog%20Prof.%20Pardal_%20Mascote%20Chef.png' alt='Logo original Hot Dog Prof. Pardal'><div><strong>Hot Dog Prof. Pardal</strong><div id='pardalStatus' role='status'>Consultando funcionamento...</div></div></div></div>
