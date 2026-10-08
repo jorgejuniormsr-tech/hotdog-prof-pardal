@@ -293,7 +293,7 @@ async function toggleVacation(){
   const changes=[{key:'vacation_mode',value:next},{key:'delivery_open',value:!next},{key:'notice_enabled',value:next},{key:'notice_text',value:next?'🏖️ Estamos de férias! Atendimento temporariamente suspenso. Em breve estaremos de volta.':''}];
   for(const row of changes){const response=await adminFetch(SUPABASE_URL+'/rest/v1/app_settings?on_conflict=key',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({...row,updated_at:new Date().toISOString()})});if(!response.ok)throw Error(await response.text())}
   db.vacationMode=next;db.deliveryOpen=!next;db.noticeEnabled=next;db.noticeText=changes[3].value;save();render();
- }catch(e){alert('Erro ao atualizar modo férias: '+e.message);await syncCatalogFromSupabase()}
+ }catch(e){alert('Erro ao atualizar modo férias: '+e.message);window.location.reload()}
 }
 async function loadCashClosings(){
  const el=document.getElementById('cashClosings');if(!el)return;el.textContent='Carregando...';
