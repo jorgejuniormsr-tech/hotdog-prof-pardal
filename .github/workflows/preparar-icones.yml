@@ -1,0 +1,50 @@
+name: Preparar icones PWA
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Logo de Hot Dog do Prof. Pardal.png'
+      - '.github/workflows/preparar-icones.yml'
+permissions:
+  contents: write
+jobs:
+  icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pillow
+      - name: Gerar icones sem cortes
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          source=Image.open('Logo de Hot Dog do Prof. Pardal.png').convert('RGBA')
+          alpha=source.getchannel('A')
+          bounds=alpha.getbbox()
+          if bounds: source=source.crop(bounds)
+          for size in (192,512):
+              for kind,ratio in (('any',0.84),('maskable',0.68)):
+                  canvas=Image.new('RGBA',(size,size),(255,247,237,255))
+                  art=source.copy()
+                  art.thumbnail((round(size*ratio),round(size*ratio)),Image.Resampling.LANCZOS)
+                  canvas.alpha_composite(art,((size-art.width)//2,(size-art.height)//2))
+                  canvas.convert('RGB').save(f'icon-{size}-{kind}.png')
+          size=180
+          canvas=Image.new('RGBA',(size,size),(255,247,237,255))
+          art=source.copy()
+          art.thumbnail((round(size*.80),round(size*.80)),Image.Resampling.LANCZOS)
+          canvas.alpha_composite(art,((size-art.width)//2,(size-art.height)//2))
+          canvas.convert('RGB').save('apple-touch-icon.png')
+          PY
+      - name: Salvar icones gerados
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add icon-192-any.png icon-192-maskable.png icon-512-any.png icon-512-maskable.png apple-touch-icon.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate padded app icons from approved new logo"
+            git push
+          fi
