@@ -26,7 +26,7 @@ jobs:
           bounds=alpha.getbbox()
           if bounds: source=source.crop(bounds)
           for size in (192,512):
-              for kind,ratio in (('any',0.78),('maskable',0.62)):
+              for kind,ratio in (('any',0.88),('maskable',0.72)):
                   canvas=Image.new('RGBA',(size,size),(255,247,237,255))
                   art=source.copy()
                   art.thumbnail((round(size*ratio),round(size*ratio)),Image.Resampling.LANCZOS)
