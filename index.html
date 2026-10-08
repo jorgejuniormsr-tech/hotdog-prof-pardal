@@ -383,7 +383,7 @@ function menuProductImage(p){
   id==='drink_600'||/600\s*ml/.test(name)?'Trio de Refrigerantes em Ambiente Aconchegante.png':
   id==='drink_1500'||/1[,.]5\s*l/.test(name)?'Garrafa de Guaraná Antarctica em Ambiente Aconchegante.png':
   id==='drink_2000'||/\b2\s*l\b|2\s*litros/.test(name)?'Garrafa de Coca-Cola Gelada em Destaque.png':
-  id==='drink_water'||/\bágua\b|\bagua\b/.test(name)?'Garrafa de Água Mineral Gelada.png':
+  id==='drink_water'||name.includes('água')||name.includes('agua')?'Garrafa de Água Mineral Gelada.png':
   p.cat==='Hot Dogs'?'Cachorro-quente gourmet com batata palha.png':null;
  return file?'/'+encodeURIComponent(file):null;
 }
