@@ -312,7 +312,10 @@ async function syncCatalogFromSupabase(){
     console.info('Cardápio sincronizado com Supabase');
   }catch(err){console.warn('Não foi possível sincronizar com Supabase; usando dados locais.',err);}
 }
-window.addEventListener('scroll',()=>{document.body.classList.toggle('pardal-scrolled',window.scrollY>120)},{passive:true});
+function updatePardalCover(){const y=Math.max(0,window.scrollY||document.documentElement.scrollTop||0);document.body.classList.toggle('pardal-scrolled',y>0)}
+window.addEventListener('scroll',updatePardalCover,{passive:true});
+window.addEventListener('pageshow',updatePardalCover);
+updatePardalCover();
 function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');render()}
 function render(){renderMenu();renderCart();renderOrders();renderOperations();renderFinalized();renderProducts();renderIngredients();renderDrinkOptions();renderDelivery();renderNoticeAdmin();renderWhatsAppSettings()}
 function setMenuCat(cat){menuCat=cat;renderMenu()}
