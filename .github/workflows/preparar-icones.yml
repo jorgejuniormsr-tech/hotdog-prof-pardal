@@ -19,7 +19,7 @@ jobs:
       - name: Gerar icones sem cortes
         run: |
           python - <<'PY'
-          from PIL import Image
+          from PIL import Image, ImageDraw, ImageFont
           from pathlib import Path
           source=Image.open('Hotdog Prof. Pardal_ Mascote Chef.png').convert('RGBA')
           alpha=source.getchannel('A')
@@ -32,6 +32,20 @@ jobs:
                   art.thumbnail((round(size*ratio),round(size*ratio)),Image.Resampling.LANCZOS)
                   canvas.alpha_composite(art,((size-art.width)//2,(size-art.height)//2))
                   canvas.convert('RGB').save(f'icon-{size}-{kind}.png')
+                  admin=canvas.copy()
+                  draw=ImageDraw.Draw(admin)
+                  # Faixa vermelha com ADM, mantendo o mascote original
+                  left=round(size*.15)
+                  right=round(size*.85)
+                  top=round(size*.70)
+                  bottom=round(size*.88)
+                  draw.rounded_rectangle((left,top,right,bottom),radius=round(size*.045),fill=(185,28,28,255))
+                  try:
+                      font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',round(size*.115))
+                  except OSError:
+                      font=ImageFont.load_default()
+                  draw.text(((left+right)/2,(top+bottom)/2),'ADM',font=font,fill='white',anchor='mm')
+                  admin.convert('RGB').save(f'admin-icon-{size}-{kind}.png')
           size=180
           canvas=Image.new('RGBA',(size,size),(255,247,237,255))
           art=source.copy()
@@ -43,7 +57,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add icon-192-any.png icon-192-maskable.png icon-512-any.png icon-512-maskable.png apple-touch-icon.png
+          git add icon-192-any.png icon-192-maskable.png icon-512-any.png icon-512-maskable.png admin-icon-192-any.png admin-icon-192-maskable.png admin-icon-512-any.png admin-icon-512-maskable.png apple-touch-icon.png
           if ! git diff --cached --quiet; then
             git commit -m "Generate padded app icons from approved new logo"
             git push
