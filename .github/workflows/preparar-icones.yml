@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'Logo de Hot Dog do Prof. Pardal.png'
+      - 'Hotdog Prof. Pardal_ Mascote Chef.png'
       - '.github/workflows/preparar-icones.yml'
 permissions:
   contents: write
@@ -21,12 +21,12 @@ jobs:
           python - <<'PY'
           from PIL import Image
           from pathlib import Path
-          source=Image.open('Logo de Hot Dog do Prof. Pardal.png').convert('RGBA')
+          source=Image.open('Hotdog Prof. Pardal_ Mascote Chef.png').convert('RGBA')
           alpha=source.getchannel('A')
           bounds=alpha.getbbox()
           if bounds: source=source.crop(bounds)
           for size in (192,512):
-              for kind,ratio in (('any',0.84),('maskable',0.68)):
+              for kind,ratio in (('any',0.78),('maskable',0.62)):
                   canvas=Image.new('RGBA',(size,size),(255,247,237,255))
                   art=source.copy()
                   art.thumbnail((round(size*ratio),round(size*ratio)),Image.Resampling.LANCZOS)
@@ -35,7 +35,7 @@ jobs:
           size=180
           canvas=Image.new('RGBA',(size,size),(255,247,237,255))
           art=source.copy()
-          art.thumbnail((round(size*.80),round(size*.80)),Image.Resampling.LANCZOS)
+          art.thumbnail((round(size*.74),round(size*.80)),Image.Resampling.LANCZOS)
           canvas.alpha_composite(art,((size-art.width)//2,(size-art.height)//2))
           canvas.convert('RGB').save('apple-touch-icon.png')
           PY
