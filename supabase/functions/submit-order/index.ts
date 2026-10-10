@@ -50,12 +50,27 @@ Deno.serve(async(req)=>{
    if(removals.length){const allowedRemovalNames=(reqComp||[]).filter((c:any)=>c.removable!==false).map((c:any)=>c.ingredients?.name);if(removals.some((n:any)=>!allowedRemovalNames.includes(String(n))))return out({error:"Remoção inválida no produto "+p.name},400);}
    const qty=Math.max(1,Math.min(99,parseInt(raw.qty)||1)); let unit=Number(p.price); const extraRows:any[]=[];
    const requested=Array.isArray(raw.extras)?raw.extras:[];
+   const {data:ex,error:exe}=await sb.from("product_extras").select("price,max_quantity,active,ingredient_id,ingredients(name,active)").eq("product_id",p.id).eq("active",true);
+   if(exe)throw exe;
+   const extraQuantities=new Map<string,number>();let freeSwapUsed=false;
    for(const ex0 of requested){
-    const m=String(ex0).match(/^\s*(\d+)×\s*(.+)$/); const exName=(m?m[2]:String(ex0)).trim(); const exQty=m?parseInt(m[1]):1;
-    const {data:ex}=await sb.from("product_extras").select("price,max_quantity,active,ingredient_id,ingredients(name,active)").eq("product_id",p.id).eq("active",true);
+    const text=String(ex0),m=text.match(/^\s*(\d+)×\s*(.+)$/);
+    const label=(m?m[2]:text).trim(),exQty=m?parseInt(m[1]):1;
+    const swap=/\s*\((?:1 )?troca sem custo\)$/.test(label);
+    const exName=label.replace(/\s*\((?:1 )?troca sem custo\)$/,"").trim();
     const found=(ex||[]).find((e:any)=>e.ingredients?.name===exName&&e.ingredients?.active!==false);
-    if(!found||exQty<1||exQty>found.max_quantity) return out({error:"Adicional inválido: "+exName},400);
-    unit+=Number(found.price)*exQty; extraRows.push({ingredient_id:found.ingredient_id,ingredient_name:exName,quantity:exQty,unit_price:Number(found.price)});
+    const totalQty=(extraQuantities.get(exName)||0)+exQty;
+    if(!found||exQty<1||totalQty>found.max_quantity)return out({error:"Adicional inválido: "+exName},400);
+    extraQuantities.set(exName,totalQty);
+    if(swap){
+     const hasSausageRemoval=removals.some((n:any)=>norm(n)==="salsicha")&&(reqComp||[]).some((c:any)=>norm(c.ingredients?.name)==="salsicha"&&c.removable!==false);
+     if(freeSwapUsed||!hasSausageRemoval||norm(exName)!=="linguica calabresa")return out({error:"Troca de carne inválida"},400);
+     freeSwapUsed=true;
+     extraRows.push({ingredient_id:found.ingredient_id,ingredient_name:exName+" (troca sem custo)",quantity:1,unit_price:0});
+    }
+    const paidQty=exQty-(swap?1:0);
+    unit+=Number(found.price)*paidQty;
+    if(paidQty)extraRows.push({ingredient_id:found.ingredient_id,ingredient_name:exName,quantity:paidQty,unit_price:Number(found.price)});
    }
    const line=unit*qty; subtotal+=line; if(p.category==="Hot Dogs")hasKitchen=true;if(p.category==="Sucos")hasBar=true;
    prepared.push({p,qty,unit,line,raw,extraRows});
