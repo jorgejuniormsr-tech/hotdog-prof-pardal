@@ -12,7 +12,7 @@ function setup(){
  return {notifications,push,click,setAdmin(){windows=[{url:'https://hotdog-prof-pardal.vercel.app/admin.html',focus:async()=>focused=true,postMessage:m=>message=m}]},focused:()=>focused,opened:()=>opened,message:()=>message};
 }
 test('closed app receives one notification per order and opens ADM',async()=>{
- const a=setup();await a.push('9');await a.push('9');await a.push('10');assert.equal(a.notifications.length,2);assert.equal(a.notifications[0].o.silent,false);assert.equal(a.notifications[0].o.tag,'pardal-order-9');await a.click();assert.equal(a.opened(),'/admin.html');
+ const a=setup();await a.push('9');await a.push('9');await a.push('10');assert.equal(a.notifications.length,2);assert.equal(a.notifications[0].o.silent,false);assert.equal(a.notifications[0].o.tag,'pardal-order-9');await a.click();assert.equal(a.opened(),'/admin.html?order=9');
 });
 test('open ADM avoids a second device sound and notification click focuses it',async()=>{
  const a=setup();a.setAdmin();await a.push('9');assert.equal(a.notifications[0].o.silent,true);await a.click();assert.equal(a.focused(),true);assert.equal(a.message().type,'OPEN_ADMIN_ORDERS');

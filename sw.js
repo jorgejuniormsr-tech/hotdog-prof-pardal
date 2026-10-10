@@ -32,6 +32,6 @@ self.addEventListener('notificationclick',e=>{
   const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
   const adm=windows.find(c=>new URL(c.url).pathname==='/admin.html');
   if(adm){await adm.focus();adm.postMessage({type:'OPEN_ADMIN_ORDERS',orderId:e.notification.data?.orderId})}
-  else await self.clients.openWindow('/admin.html');
+  else await self.clients.openWindow('/admin.html?order='+encodeURIComponent(e.notification.data?.orderId||''));
  })());
 });

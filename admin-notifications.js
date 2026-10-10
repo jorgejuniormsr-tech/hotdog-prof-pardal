@@ -63,7 +63,7 @@ const adminOrderAlerts = (() => {
         localStorage.setItem(seenKey,JSON.stringify([...seen].slice(-2000)));
         for(const o of fresh){
           if(prefs.sound)ring();
-          const banner=$('newOrderNotice');banner.hidden=false;banner.textContent='Novo pedido #'+o.id+' recebido. Abrir Pedidos';
+          const banner=$('newOrderNotice');banner.hidden=false;banner.dataset.orderId=String(o.id);banner.textContent='Novo pedido #'+o.id+' recebido. Abrir pedido';
         }
       };
       if(navigator.locks)await navigator.locks.request('pardal-admin-order-alert',run);else run();
@@ -75,11 +75,12 @@ const adminOrderAlerts = (() => {
   });
   $('orderNotificationsEnabled').addEventListener('change',togglePush);
   $('testOrderSound').addEventListener('click',async()=>{if(await unlock())ring();refresh()});
-  $('newOrderNotice').addEventListener('click',()=>{$('newOrderNotice').hidden=true;show('adminOrders')});
+  async function openOrder(id){await loadRemoteOrders(true);const order=db.orders.find(o=>String(o.id)===String(id));show('kitchen');if(order){sheet.innerHTML=orderCard(order,true);modal.classList.add('open')}}
+  $('newOrderNotice').addEventListener('click',()=>{$('newOrderNotice').hidden=true;openOrder($('newOrderNotice').dataset.orderId)});
   document.addEventListener('pointerdown',()=>{if(prefs.sound)unlock().then(refresh)},{passive:true});
   document.addEventListener('keydown',()=>{if(prefs.sound)unlock().then(refresh)});
   window.addEventListener('storage',e=>{if(e.key===key){try{prefs={...prefs,...JSON.parse(e.newValue||'{}')};refresh()}catch{}}});
-  navigator.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='OPEN_ADMIN_ORDERS'){show('adminOrders');loadRemoteOrders(true)}});
+  navigator.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='OPEN_ADMIN_ORDERS'){openOrder(e.data.orderId)}});
   refresh();
-  return {observe,async authenticated(){if(prefs.push&&'Notification' in window&&Notification.permission==='granted')try{await syncSubscription()}catch(e){status(e.message)}}};
+  return {observe,async authenticated(){const orderId=new URL(location.href).searchParams.get('order');if(orderId){history.replaceState(null,'','/admin.html');openOrder(orderId)}if(prefs.push&&'Notification' in window&&Notification.permission==='granted')try{await syncSubscription()}catch(e){status(e.message)}}};
 })();

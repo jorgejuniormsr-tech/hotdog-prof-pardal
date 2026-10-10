@@ -4,7 +4,7 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 function setup(storage=new Map()){
  const els=new Map();let tones=0;
- const el=id=>{if(!els.has(id))els.set(id,{checked:false,disabled:false,textContent:'',hidden:true,listeners:{},addEventListener(t,cb){this.listeners[t]=cb}});return els.get(id)};
+ const el=id=>{if(!els.has(id))els.set(id,{checked:false,disabled:false,textContent:'',hidden:true,dataset:{},listeners:{},addEventListener(t,cb){this.listeners[t]=cb}});return els.get(id)};
  const ctx={console,Set,Uint8Array,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{getElementById:el,addEventListener(){}},navigator:{locks:{request:async(k,cb)=>cb()}},window:{addEventListener(){},AudioContext:class{state='running';currentTime=0;createOscillator(){return {frequency:{},connect(){},start(){tones++},stop(){}}}createGain(){return {gain:{setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){}}}}}};
  vm.createContext(ctx);vm.runInContext(fs.readFileSync('admin-notifications.js','utf8')+'\nglobalThis.alerts=adminOrderAlerts;',ctx);
  return {ctx,els,storage,el,tones:()=>tones};
