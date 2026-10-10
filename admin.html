@@ -387,7 +387,7 @@ async function editProduct(id){
 async function saveProduct(id){
   if(!pn.value.trim())return alert('Informe o nome do produto.');
   if(pp.value===''||+pp.value<0)return alert('Informe o preço.');
-  let composition=[...document.querySelectorAll('.compCheck:checked')].map(ch=>({ingredientId:ch.dataset.id,qty:+document.querySelector(`.compQty[data-id="${CSS.escape(ch.dataset.id)}"]`).value||1,unit:document.querySelector(`.compUnit[data-id="${CSS.escape(ch.dataset.id)}"]`).value,removable:true}));
+  let composition=[...document.querySelectorAll('.compCheck:checked')].map(ch=>({ingredientId:ch.dataset.id,qty:+document.querySelector(`.compQty[data-id="${CSS.escape(ch.dataset.id)}"]`).value||1,unit:document.querySelector(`.compUnit[data-id="${CSS.escape(ch.dataset.id)}"]`).value,removable:!(db.ingredients.find(i=>String(i.id)===String(ch.dataset.id))?.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()==='pao')}));
   let extraConfig=[...document.querySelectorAll('.extraCheck:checked')].map(ch=>({ingredientId:ch.dataset.id,price:+document.querySelector(`.extraPrice[data-id="${CSS.escape(ch.dataset.id)}"]`).value||0,maxQty:Math.max(1,+document.querySelector(`.extraMax[data-id="${CSS.escape(ch.dataset.id)}"]`).value||1)}));
   let old=id?db.products.find(p=>String(p.id)===String(id)):null;
   let drinkOptions=pc.value==='Bebidas'?[...document.querySelectorAll('.drinkProductCheck:checked')].map(ch=>ch.dataset.id):(old?.drinkOptions||[]);

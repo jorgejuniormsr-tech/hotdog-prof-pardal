@@ -1,4 +1,4 @@
-const VERSION="pardal-v8.50";const CORE=["/","/index.html","/manifest.webmanifest","/Cachorro-quente%20gourmet%20com%20batata%20palha.png"];
+const VERSION="pardal-v8.51";const CORE=["/","/index.html","/manifest.webmanifest","/Cachorro-quente%20gourmet%20com%20batata%20palha.png"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(VERSION).then(c=>c.addAll(CORE))));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==VERSION && !k.startsWith('pardal-push-')).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener("message",e=>{if(e.data==="SKIP_WAITING")self.skipWaiting()});
