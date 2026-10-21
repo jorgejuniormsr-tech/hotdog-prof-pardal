@@ -1,14 +1,24 @@
-const VERSION="pardal-v8.51";const CORE=["/","/index.html","/manifest.webmanifest","/Cachorro-quente%20gourmet%20com%20batata%20palha.png"];
+const VERSION="pardal-v8.52";const CORE=["/","/index.html","/manifest.webmanifest","/assets/hotdog.webp","/assets/logo.webp"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(VERSION).then(c=>c.addAll(CORE))));
-self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==VERSION && !k.startsWith('pardal-push-')).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('pardal-v') && k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener("message",e=>{if(e.data==="SKIP_WAITING")self.skipWaiting()});
 self.addEventListener("fetch",e=>{
  if(e.request.method!=="GET")return;
+ const url=new URL(e.request.url);
+ // Supabase responses and other origins must never enter the offline cache.
+ if(url.origin!==self.location.origin)return;
  if(e.request.mode==="navigate"){
-  const path=new URL(e.request.url).pathname,cachePath=path==='/admin.html'?'/admin.html':'/index.html';
-  e.respondWith(fetch(e.request).then(r=>{if(r.ok){let c=r.clone();caches.open(VERSION).then(x=>x.put(cachePath,c))}return r}).catch(()=>caches.match(cachePath)));return;
+  const path=url.pathname;
+  if(path!=='/' && path!=='/index.html')return;
+  e.respondWith(fetch(e.request).then(r=>{if(r.ok){const copy=r.clone();e.waitUntil(caches.open(VERSION).then(x=>x.put('/index.html',copy)))}return r}).catch(()=>caches.match('/index.html')));return;
  }
- e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request)));
+ if(!/\.(?:webp|png|svg|js|webmanifest)$/.test(url.pathname))return;
+ e.respondWith(caches.open(VERSION).then(async cache=>{
+  const cached=await cache.match(e.request);if(cached)return cached;
+  const response=await fetch(e.request);
+  if(response.ok&&response.type!=='opaque'){const copy=response.clone();e.waitUntil(cache.put(e.request,copy))}
+  return response;
+ }));
 });
 self.addEventListener('push',e=>e.waitUntil((async()=>{
  const data=e.data?.json();if(!data?.orderId)return;
@@ -35,3 +45,4 @@ self.addEventListener('notificationclick',e=>{
   else await self.clients.openWindow('/admin.html?order='+encodeURIComponent(e.notification.data?.orderId||''));
  })());
 });
+

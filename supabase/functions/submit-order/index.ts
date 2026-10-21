@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.110.0";
 const CORS={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const out=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:CORS});
 Deno.serve(async(req)=>{
@@ -29,20 +29,33 @@ Deno.serve(async(req)=>{
   const {data:products,error:pe}=await sb.from("products").select("id,name,category,price,active").in("name",names);
   if(pe) throw pe;
   const pm=new Map((products||[]).map((p:any)=>[p.name,p]));
+  // Load validation metadata once per request, independent of item count.
+  const productIds=(products||[]).map((p:any)=>p.id);
+  const flavors=[...new Set(b.items.map((x:any)=>String(x.flavor||"").trim()).filter(Boolean))];
+  const [compositions,extras,drinkOptions,juiceFlavors]=await Promise.all([
+   sb.from("product_composition").select("product_id,ingredient_id,removable,ingredients(name,active)").in("product_id",productIds),
+   sb.from("product_extras").select("product_id,price,max_quantity,active,ingredient_id,ingredients(name,active)").in("product_id",productIds).eq("active",true),
+   sb.from("product_drink_options").select("product_id,active,drink_options(name,active)").in("product_id",productIds).eq("active",true),
+   flavors.length?sb.from("ingredients").select("id,name").in("name",flavors).in("category",["Sucos","Todos"]).eq("active",true):Promise.resolve({data:[],error:null})
+  ]);
+  for(const result of [compositions,extras,drinkOptions,juiceFlavors])if(result.error)throw result.error;
+  const groupByProduct=(rows:any[])=>{const grouped=new Map();for(const row of rows||[]){const list=grouped.get(row.product_id)||[];list.push(row);grouped.set(row.product_id,list)}return grouped};
+  const compositionByProduct=groupByProduct(compositions.data),extrasByProduct=groupByProduct(extras.data),drinksByProduct=groupByProduct(drinkOptions.data);
+  const availableFlavors=new Set((juiceFlavors.data||[]).map((f:any)=>f.name));
   const prepared:any[]=[]; let subtotal=0, hasKitchen=false, hasBar=false;
   for(const raw of b.items){
    const p:any=pm.get(String(raw.product||"").trim()); if(!p||!p.active) return out({error:"Produto indisponível: "+String(raw.product||"")},400);
-   const {data:reqComp,error:rce}=await sb.from("product_composition").select("ingredient_id,removable,ingredients(name,active)").eq("product_id",p.id); if(rce)throw rce;
+   const reqComp=compositionByProduct.get(p.id)||[];
    const blocked=(reqComp||[]).filter((c:any)=>c.ingredients?.active===false);
    if(blocked.length) return out({error:"Produto indisponível no momento: "+p.name},400);
    if(p.category==="Bebidas"){
      const optName=String(raw.drinkOption||"").trim(); if(!optName)return out({error:"Escolha uma opção de bebida para "+p.name},400);
-     const {data:pdo}=await sb.from("product_drink_options").select("active,drink_options(name,active)").eq("product_id",p.id).eq("active",true);
+     const pdo=drinksByProduct.get(p.id)||[];
      if(!(pdo||[]).some((x:any)=>x.drink_options?.active!==false&&x.drink_options?.name===optName))return out({error:"Opção de bebida indisponível: "+optName},400);
    }
    if(p.category==="Sucos"){
      const flavor=String(raw.flavor||"").trim(); if(!flavor)return out({error:"Escolha o sabor do suco"},400);
-     const {data:fi}=await sb.from("ingredients").select("id").eq("name",flavor).in("category",["Sucos","Todos"]).eq("active",true).maybeSingle();
+     const fi=availableFlavors.has(flavor);
      if(!fi)return out({error:"Sabor indisponível: "+flavor},400);
      if(!["Com açúcar","Sem açúcar"].includes(String(raw.sugar||"")))return out({error:"Escolha se deseja o suco com ou sem açúcar"},400);
    }
@@ -50,8 +63,7 @@ Deno.serve(async(req)=>{
    if(removals.length){const allowedRemovalNames=(reqComp||[]).filter((c:any)=>c.removable!==false).map((c:any)=>c.ingredients?.name);if(removals.some((n:any)=>!allowedRemovalNames.includes(String(n))))return out({error:"Remoção inválida no produto "+p.name},400);}
    const qty=Math.max(1,Math.min(99,parseInt(raw.qty)||1)); let unit=Number(p.price); const extraRows:any[]=[];
    const requested=Array.isArray(raw.extras)?raw.extras:[];
-   const {data:ex,error:exe}=await sb.from("product_extras").select("price,max_quantity,active,ingredient_id,ingredients(name,active)").eq("product_id",p.id).eq("active",true);
-   if(exe)throw exe;
+   const ex=extrasByProduct.get(p.id)||[];
    const extraQuantities=new Map<string,number>();let freeSwapUsed=false;
    for(const ex0 of requested){
     const text=String(ex0),m=text.match(/^\s*(\d+)×\s*(.+)$/);
@@ -73,7 +85,7 @@ Deno.serve(async(req)=>{
     if(paidQty)extraRows.push({ingredient_id:found.ingredient_id,ingredient_name:exName,quantity:paidQty,unit_price:Number(found.price)});
    }
    const line=unit*qty; subtotal+=line; if(p.category==="Hot Dogs")hasKitchen=true;if(p.category==="Sucos")hasBar=true;
-   prepared.push({p,qty,unit,line,raw,extraRows});
+   prepared.push({p,qty,unit,line,raw,extraRows,removalRows:reqComp.filter((c:any)=>removals.includes(c.ingredients?.name)).map((c:any)=>({ingredient_id:c.ingredient_id,ingredient_name:c.ingredients.name}))});
   }
   const {data:cust,error:ce}=await sb.from("customers").upsert({name,phone,updated_at:new Date().toISOString()},{onConflict:"phone"}).select("id").single(); if(ce)throw ce;
   if(deviceToken){const h=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(deviceToken)))).map(x=>x.toString(16).padStart(2,"0")).join("");await sb.from("customer_device_sessions").upsert({customer_id:cust.id,token_hash:h,last_used_at:new Date().toISOString()},{onConflict:"token_hash"});}
@@ -84,8 +96,8 @@ Deno.serve(async(req)=>{
   for(const x of prepared){
    const r=x.raw; const {data:oi,error:ie}=await sb.from("order_items").insert({order_id:ord.id,product_id:x.p.id,product_name:x.p.name,category:x.p.category,quantity:x.qty,unit_price:x.unit,line_total:x.line,flavor:r.flavor||null,sugar:r.sugar||null,drink_option:r.drinkOption||null,observation:String(r.obs||"").slice(0,500)}).select("id").single(); if(ie)throw ie;
    const removals=Array.isArray(r.remove)?r.remove:[];
-   if(removals.length){const {data:ings}=await sb.from("ingredients").select("id,name").in("name",removals); if(ings?.length) await sb.from("order_item_removals").insert(ings.map((i:any)=>({order_item_id:oi.id,ingredient_id:i.id,ingredient_name:i.name})));}
-   if(x.extraRows.length) await sb.from("order_item_extras").insert(x.extraRows.map((e:any)=>({...e,order_item_id:oi.id})));
+   if(x.removalRows.length){const {error}=await sb.from("order_item_removals").insert(x.removalRows.map((r:any)=>({...r,order_item_id:oi.id})));if(error)throw error;}
+   if(x.extraRows.length){const {error}=await sb.from("order_item_extras").insert(x.extraRows.map((e:any)=>({...e,order_item_id:oi.id})));if(error)throw error;}
   }
   // Notify only after all order items have been saved. Push failures never reject a sale.
   const notify=fetch(Deno.env.get("SUPABASE_URL")!+"/functions/v1/admin-notifications",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!},body:JSON.stringify({action:"dispatch",orderId:ord.id}),signal:AbortSignal.timeout(15000)}).then(r=>{if(!r.ok)console.error("Order push dispatch failed",r.status)}).catch(()=>console.error("Order push dispatch unavailable"));
@@ -93,3 +105,4 @@ Deno.serve(async(req)=>{
   return out({ok:true,order:{id:ord.id,created_at:ord.created_at,subtotal,delivery_fee:deliveryFee,total:Number(ord.total),status:ord.status}});
  }catch(e){console.error(e);return out({error:"Não foi possível registrar o pedido."},500)}
 });
+
